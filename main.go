@@ -22,11 +22,11 @@ func main() {
 
 	scanner := stateflow.Scanner{Source: fileContents}
 	_, scanErrs := scanner.ScanTokens()
+	scanner.PrintTokens()
 	if len(scanErrs) > 0 {
 		for _, err := range scanErrs {
 			fmt.Fprint(os.Stderr, err.Error())
 		}
-		// os.Exit(65) // Syntax Error
+		os.Exit(65) // Syntax Error
 	}
-	scanner.PrintTokens()
 }

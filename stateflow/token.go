@@ -5,25 +5,27 @@ import "fmt"
 type TokenType string
 
 const (
-	EOF         TokenType = "EOF"
-	IDENTIFIER  TokenType = "IDENTIFIER"
-	STRING      TokenType = "STRING"
-	LEFT_PAREN  TokenType = "LEFT_PAREN"
-	RIGHT_PAREN TokenType = "RIGHT_PAREN"
-	LEFT_BRACE  TokenType = "LEFT_BRACE"
-	RIGHT_BRACE TokenType = "RIGHT_BRACE"
-	ARROW_LEFT  TokenType = "ARROW_LEFT"
-	ARROW_RIGHT TokenType = "ARROW_RIGHT"
-	NEWLINE     TokenType = "NEWLINE"
-	DFA         TokenType = "DFA"
-	INITIAL     TokenType = "INITIAL"
-	STATE       TokenType = "STATE"
-	FINAL       TokenType = "FINAL"
-	ON          TokenType = "ON"
-	WHEN        TokenType = "WHEN"
-	OR          TokenType = "OR"
-	FUNCTION    TokenType = "FUNCTION"
-	STR         TokenType = "STR"
+	EOF            TokenType = "EOF"
+	IDENTIFIER     TokenType = "IDENTIFIER"
+	STRING_LITERAL TokenType = "STRING_LITERAL"
+	LEFT_PAREN     TokenType = "LEFT_PAREN"
+	RIGHT_PAREN    TokenType = "RIGHT_PAREN"
+	LEFT_BRACE     TokenType = "LEFT_BRACE"
+	RIGHT_BRACE    TokenType = "RIGHT_BRACE"
+	ARROW_LEFT     TokenType = "ARROW_LEFT"
+	ARROW_RIGHT    TokenType = "ARROW_RIGHT"
+	NEWLINE        TokenType = "NEWLINE"
+	SEMICOLON      TokenType = "SEMICOLON"
+	DFA            TokenType = "DFA"
+	INITIAL        TokenType = "INITIAL"
+	STATE          TokenType = "STATE"
+	FINAL          TokenType = "FINAL"
+	ON             TokenType = "ON"
+	WHEN           TokenType = "WHEN"
+	OR             TokenType = "OR"
+	FUNCTION       TokenType = "FUNCTION"
+	STRING         TokenType = "STRING"
+	REGEX          TokenType = "REGEX"
 )
 
 type Token struct {
@@ -34,13 +36,13 @@ type Token struct {
 }
 
 func (t Token) String() string {
-	return fmt.Sprintf("(%v %q %s)", t.tokenType, t.lexeme, stringifyTokenValue(t.literal))
+	return fmt.Sprintf("(%v %q %s)", t.tokenType, t.lexeme, t.stringifyLiteral())
 }
 
-func stringifyTokenValue(value any) string {
-	switch value.(type) {
+func (t Token) stringifyLiteral() string {
+	switch t.literal.(type) {
 	case nil:
 		return "null"
 	}
-	return fmt.Sprint(value)
+	return fmt.Sprint(t.literal)
 }

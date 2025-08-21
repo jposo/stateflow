@@ -13,7 +13,7 @@ var keywords = map[string]TokenType{
 	"when":    WHEN,
 	"or":      OR,
 	"fn":      FUNCTION,
-	"str":     STR,
+	"str":     STRING,
 }
 
 type Scanner struct {
@@ -74,6 +74,11 @@ func (s *Scanner) scanToken() error {
 			for s.peek() != '\n' && !s.isAtEnd() {
 				s.advance()
 			}
+		} else {
+			err := s.regex()
+			if err != nil {
+				return err
+			}
 		}
 	case '"':
 		err := s.string()
@@ -82,11 +87,13 @@ func (s *Scanner) scanToken() error {
 		}
 	case '\n':
 		prev := s.glance()
-		if prev != nil && (prev.tokenType == IDENTIFIER ||
-			prev.tokenType == STRING) {
-			fmt.Println("Can insert semicolon in line ", s.line)
+		if prev != nil {
+			switch prev.tokenType {
+			case IDENTIFIER, STRING_LITERAL:
+				s.addToken(SEMICOLON)
+			}
 		}
-		s.addToken(NEWLINE)
+		// s.addToken(NEWLINE)
 		s.line += 1
 	case ' ':
 	case '\t':
@@ -159,7 +166,24 @@ func (s *Scanner) string() error {
 	s.advance() // Closing "
 
 	value := string(s.Source[s.start+1 : s.current-1])
-	s.addToken(STRING, value)
+	s.addToken(STRING_LITERAL, value)
+	return nil
+}
+
+func (s *Scanner) regex() error {
+	for s.peek() != '/' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			return errors.New("Unterminated RegEx.\n")
+		}
+		s.advance()
+	}
+	if s.isAtEnd() {
+		return errors.New("Unterminated RegEx.\n")
+	}
+	s.advance() // Closing /
+
+	value := string(s.Source[s.start+1 : s.current-1])
+	s.addToken(REGEX, value)
 	return nil
 }
 
