@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: go run main.go <filename>")
+		fmt.Fprintln(os.Stderr, "Usage: go run . <filename>")
 		os.Exit(1)
 	}
 	filename := os.Args[1]

@@ -17,12 +17,13 @@ var keywords = map[string]TokenType{
 }
 
 type Scanner struct {
-	Source  []byte
-	tokens  []Token
-	start   int
-	current int
-	line    int
-	errors  []error
+	Source   []byte
+	tokens   []Token
+	start    int
+	current  int
+	line     int
+	inString bool
+	errors   []error
 }
 
 func (s *Scanner) PrintTokens() {
@@ -42,7 +43,7 @@ func (s *Scanner) ScanTokens() ([]Token, []error) {
 			s.errors = append(s.errors, err)
 		}
 	}
-	s.tokens = append(s.tokens, Token{EOF, "", nil, s.line})
+	s.tokens = append(s.tokens, Token{EOF, "", s.line})
 	return s.tokens, s.errors
 }
 
@@ -64,10 +65,14 @@ func (s *Scanner) scanToken() error {
 	case '-':
 		if s.match('>') {
 			s.addToken(ARROW_RIGHT)
+		} else {
+			return s.unexpectedError()
 		}
 	case '<':
 		if s.match('-') {
 			s.addToken(ARROW_LEFT)
+		} else {
+			return s.unexpectedError()
 		}
 	case '/':
 		if s.match('/') {
@@ -81,12 +86,16 @@ func (s *Scanner) scanToken() error {
 			}
 		}
 	case '"':
-		err := s.string()
-		if err != nil {
-			return err
-		}
+		s.inString = !s.inString
+		s.addToken(QUOTE)
+		// err := s.string()
+		// if err != nil {
+		// 	return err
+		// }
+	case ';':
+		s.addToken(SEMICOLON)
 	case '\n':
-		prev := s.glance()
+		prev := s.lastToken()
 		if prev != nil {
 			switch prev.tokenType {
 			case IDENTIFIER, STRING_LITERAL:
@@ -99,13 +108,22 @@ func (s *Scanner) scanToken() error {
 	case '\t':
 	case '\r':
 	default:
-		if isAlpha(c) {
+		if s.inString {
+			for s.peek() != '"' && !s.isAtEnd() {
+				s.advance()
+			}
+			s.addToken(STRING_LITERAL)
+		} else if isAlpha(c) {
 			s.identifier()
 		} else {
-			return fmt.Errorf("Unexpected character: %s\n", s.Source[s.start:s.current])
+			return s.unexpectedError()
 		}
 	}
 	return nil
+}
+
+func (s *Scanner) unexpectedError() error {
+	return fmt.Errorf("Unexpected character in line %d: %s\n", s.line, s.Source[s.start:s.current])
 }
 
 // Returns the current byte in source and advances to next byte
@@ -116,13 +134,9 @@ func (s *Scanner) advance() byte {
 }
 
 // Store token, optional literal
-func (s *Scanner) addToken(tokenType TokenType, literal ...any) {
-	var lit any = nil
-	if len(literal) > 0 {
-		lit = literal[0]
-	}
+func (s *Scanner) addToken(tokenType TokenType) {
 	lexeme := string(s.Source[s.start:s.current])
-	s.tokens = append(s.tokens, Token{tokenType, lexeme, lit, s.line})
+	s.tokens = append(s.tokens, Token{tokenType, lexeme, s.line})
 }
 
 // Verifies in next byte is as expected, if it is, advances to next byte
@@ -146,7 +160,7 @@ func (s *Scanner) peek() byte {
 }
 
 // Look at previous token
-func (s *Scanner) glance() *Token {
+func (s *Scanner) lastToken() *Token {
 	if len(s.tokens) == 0 {
 		return nil
 	}
@@ -165,8 +179,7 @@ func (s *Scanner) string() error {
 	}
 	s.advance() // Closing "
 
-	value := string(s.Source[s.start+1 : s.current-1])
-	s.addToken(STRING_LITERAL, value)
+	s.addToken(STRING_LITERAL)
 	return nil
 }
 
@@ -182,8 +195,7 @@ func (s *Scanner) regex() error {
 	}
 	s.advance() // Closing /
 
-	value := string(s.Source[s.start+1 : s.current-1])
-	s.addToken(REGEX, value)
+	s.addToken(REGEX)
 	return nil
 }
 
