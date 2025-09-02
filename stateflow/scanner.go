@@ -17,13 +17,13 @@ var keywords = map[string]TokenType{
 }
 
 type Scanner struct {
-	Source   []byte
-	tokens   []Token
-	start    int
-	current  int
-	line     int
-	inString bool
-	errors   []error
+	Source  []byte
+	tokens  []Token
+	start   int
+	current int
+	line    int
+	// inString bool
+	errors []error
 }
 
 func (s *Scanner) PrintTokens() {
@@ -86,12 +86,12 @@ func (s *Scanner) scanToken() error {
 			}
 		}
 	case '"':
-		s.inString = !s.inString
-		s.addToken(QUOTE)
-		// err := s.string()
-		// if err != nil {
-		// 	return err
-		// }
+		// s.inString = !s.inString
+		// s.addToken(QUOTE)
+		err := s.string()
+		if err != nil {
+			return err
+		}
 	case ';':
 		s.addToken(SEMICOLON)
 	case '\n':
@@ -108,12 +108,7 @@ func (s *Scanner) scanToken() error {
 	case '\t':
 	case '\r':
 	default:
-		if s.inString {
-			for s.peek() != '"' && !s.isAtEnd() {
-				s.advance()
-			}
-			s.addToken(STRING_LITERAL)
-		} else if isAlpha(c) {
+		if isAlpha(c) {
 			s.identifier()
 		} else {
 			return s.unexpectedError()
