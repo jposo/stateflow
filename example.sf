@@ -4,8 +4,7 @@ dfa automataExample { // dfa or nfa
   initial q0
   state q1
   final q2
-  -
-  1a
+
   on q0->q1 when "1" abc
   on q1 -> q2 when "2"
   on q2 -> q2 when "3" or /\d/

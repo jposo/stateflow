@@ -7,6 +7,7 @@ import (
 
 var keywords = map[string]TokenType{
 	"dfa":     DFA,
+	"state":   STATE,
 	"initial": INITIAL,
 	"final":   FINAL,
 	"on":      ON,
