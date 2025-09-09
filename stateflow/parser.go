@@ -1,7 +1,7 @@
 package stateflow
 
 type Parser struct {
-	tokens   []Token
+	tokens   *[]Token
 	current  int
 	hadError bool
 }

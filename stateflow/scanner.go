@@ -103,7 +103,6 @@ func (s *Scanner) scanToken() error {
 				s.addToken(SEMICOLON)
 			}
 		}
-		// s.addToken(NEWLINE)
 		s.line += 1
 	case ' ':
 	case '\t':
