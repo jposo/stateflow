@@ -37,6 +37,7 @@ func (s *Scanner) ScanTokens() ([]Token, []error) {
 	s.start = 0
 	s.current = 0
 	s.line = 1
+	s.tokens = append(s.tokens, Token{BOF, "", s.line})
 	for !s.isAtEnd() {
 		s.start = s.current
 		err := s.scanToken()

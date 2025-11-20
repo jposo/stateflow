@@ -22,10 +22,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	scanner := stateflow.Scanner{Source: fileContents}
+	tokens, scanErrs := scanner.ScanTokens()
+
 	switch op {
 	case "tokenize":
-		scanner := stateflow.Scanner{Source: fileContents}
-		_, scanErrs := scanner.ScanTokens()
 		scanner.PrintTokens()
 		if len(scanErrs) > 0 {
 			for _, err := range scanErrs {
@@ -33,7 +34,19 @@ func main() {
 			}
 			os.Exit(65) // Lexical Error
 		}
-
+	case "parse":
+		if len(scanErrs) > 0 {
+			os.Exit(65)
+		}
+		parser := stateflow.Parser{Tokens: tokens}
+		_, parseErr := parser.Parse()
+		if parseErr != nil {
+			fmt.Fprint(os.Stderr, parseErr.Error())
+			os.Exit(65) // Syntax Error
+		}
+		fmt.Println("No errors!")
+		// printer := ste.AstPrinter{}
+		// printer.Print(expression)
 	default:
 		fmt.Fprintf(os.Stderr, "Invalid operation.")
 	}

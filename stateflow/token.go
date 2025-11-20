@@ -5,6 +5,7 @@ import "fmt"
 type TokenType string
 
 const (
+	BOF            TokenType = "BOF"
 	EOF            TokenType = "EOF"
 	IDENTIFIER     TokenType = "IDENTIFIER"
 	STRING_LITERAL TokenType = "STRING_LITERAL"
@@ -15,7 +16,9 @@ const (
 	ARROW_LEFT     TokenType = "ARROW_LEFT"
 	ARROW_RIGHT    TokenType = "ARROW_RIGHT"
 	SEMICOLON      TokenType = "DELIMITER"
+	COMMA          TokenType = "COMMA"
 	DFA            TokenType = "DFA"
+	NFA            TokenType = "NFA"
 	INITIAL        TokenType = "INITIAL"
 	STATE          TokenType = "STATE"
 	FINAL          TokenType = "FINAL"
