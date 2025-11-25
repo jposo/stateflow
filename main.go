@@ -9,7 +9,7 @@ import (
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintln(os.Stderr, "Usage: stateflow tokenize <filename>")
+		fmt.Fprintln(os.Stderr, "Usage: stateflow (tokenize | parse) <filename>")
 		os.Exit(1)
 	}
 	op := os.Args[1]
@@ -39,14 +39,17 @@ func main() {
 			os.Exit(65)
 		}
 		parser := stateflow.Parser{Tokens: tokens}
-		_, parseErr := parser.Parse()
+		defs, parseErr := parser.Parse()
 		if parseErr != nil {
 			fmt.Fprint(os.Stderr, parseErr.Error())
 			os.Exit(65) // Syntax Error
 		}
 		fmt.Println("No errors!")
-		// printer := ste.AstPrinter{}
-		// printer.Print(expression)
+		for _, def := range defs {
+			fmt.Println(def)
+		}
+		// printer := stateflow.AstPrinter{}
+
 	default:
 		fmt.Fprintf(os.Stderr, "Invalid operation.")
 	}

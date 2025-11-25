@@ -236,7 +236,7 @@ func (p *Parser) conditionList() ([]Condition, error) {
 }
 
 func (p *Parser) condition() (Condition, error) {
-	if p.match(STRING) {
+	if p.match(STRING_LITERAL) {
 		return StringCondition{value: p.previous().lexeme}, nil
 	}
 	if p.match(REGEX) {

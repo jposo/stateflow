@@ -1,15 +1,16 @@
 // Comments
 
 dfa automataExample { // dfa or nfa
-  initial q0
-  state q1
-  final q2
+  initial q0;
+  state q1;
+  final q2;
 
-  on q0->q1 when "1"
-  on q1 -> q2 when "2"
-  on q2 -> q2 when "3" or /\d/
+  on q0->q1 when "1";
+  on q1 -> q2 when "2";
+  on q2 -> q2 when "3" or /\d/;
+  on q2 -> q1 when "1";
 }
 
-fn main(input str) {
-  automataExample <- input
+fn main(input) {
+  automataExample <- input;
 }

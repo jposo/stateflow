@@ -1,6 +1,9 @@
 package stateflow
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type TokenType string
 
@@ -49,3 +52,20 @@ func (t Token) String() string {
 // 	}
 // 	return fmt.Sprint(t.literal)
 // }
+
+func stringifyTokenValue(value any) string {
+	switch v := value.(type) {
+	case nil:
+		return "null"
+	case float64:
+		return printFloat64(v)
+	}
+	return fmt.Sprint(value)
+}
+
+func printFloat64(f64 float64) string {
+	if f64 == math.Floor(f64) {
+		return fmt.Sprintf("%.1f", f64)
+	}
+	return fmt.Sprintf("%g", f64)
+}
