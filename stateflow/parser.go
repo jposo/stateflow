@@ -1,5 +1,9 @@
 package stateflow
 
+import (
+	"slices"
+)
+
 type Parser struct {
 	Tokens   []Token
 	current  int
@@ -26,11 +30,9 @@ func (p *Parser) Parse() ([]Definition, error) {
 }
 
 func (p *Parser) match(types ...TokenType) bool {
-	for _, t := range types {
-		if p.check(t) {
-			p.advance()
-			return true
-		}
+	if slices.ContainsFunc(types, func(t TokenType) bool { return p.check(t) }) {
+		p.advance()
+		return true
 	}
 	return false
 }
@@ -104,11 +106,178 @@ func (p *Parser) automatonDef() (*AutomatonDef, error) {
 		return nil, err
 	}
 
+	// Validate that final states don't have outgoing transitions
+	if err := p.validateAutomaton(stmts, automatonType.tokenType); err != nil {
+		return nil, err
+	}
+
 	return &AutomatonDef{
 		autType: *automatonType,
 		name:    *name,
 		stmts:   stmts,
 	}, nil
+}
+
+// validateAutomaton checks various constraints on the automaton
+func (p *Parser) validateAutomaton(stmts []Stmt, automatonType TokenType) error {
+	// Check for duplicate initial states
+	if err := p.validateUniqueInitialState(stmts); err != nil {
+		return err
+	}
+
+	// Check that final states don't have outgoing transitions
+	if err := p.validateFinalStates(stmts); err != nil {
+		return err
+	}
+
+	// For DFAs, validate deterministic transition rules
+	if automatonType == DFA {
+		if err := p.validateDFATransitions(stmts); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Checks DFA-specific transition constraints
+func (p *Parser) validateDFATransitions(stmts []Stmt) error {
+	// Collect all states (non-final states that need outgoing transitions)
+	states := make(map[string]bool)
+	finalStates := make(map[string]bool)
+
+	for _, stmt := range stmts {
+		if stateDecl, ok := stmt.(*StateDecl); ok {
+			states[stateDecl.name.lexeme] = true
+			if stateDecl.stateType.tokenType == FINAL {
+				finalStates[stateDecl.name.lexeme] = true
+			}
+		}
+	}
+
+	// Track transitions: map[fromState]map[symbol]toState
+	transitions := make(map[string]map[string]Token)
+
+	for _, stmt := range stmts {
+		if transDecl, ok := stmt.(*TransDecl); ok {
+			fromState := transDecl.fromState.lexeme
+
+			// Initialize map for this state if needed
+			if transitions[fromState] == nil {
+				transitions[fromState] = make(map[string]Token)
+			}
+
+			// Check each condition (symbol) in this transition
+			for _, condition := range transDecl.conditions {
+				var symbol string
+
+				switch cond := condition.(type) {
+				case StringCondition:
+					symbol = cond.value
+					if symbol == "\"\"" {
+						return ParseError{
+							&transDecl.fromState,
+							"Empty string condition not allowed in state '" + fromState + "'.",
+						}
+					}
+				case RegexCondition:
+					symbol = cond.pattern
+				}
+
+				// Check for duplicate transition on same symbol from same state
+				if _, exists := transitions[fromState][symbol]; exists {
+					return ParseError{
+						&transDecl.fromState,
+						"Duplicate transition from state '" + fromState +
+							"' on symbol '" + symbol + "'. " +
+							"DFA cannot have multiple transitions for the same symbol from the same state.",
+					}
+				}
+
+				// Record this transition
+				transitions[fromState][symbol] = transDecl.toState
+			}
+		}
+	}
+
+	// Check that each non-final state has exactly one transition
+	// (assuming the automaton has a finite alphabet that should be covered)
+	for state := range states {
+		if !finalStates[state] {
+			transCount := len(transitions[state])
+			if transCount == 0 {
+				// Find the token for this state to provide better error context
+				var stateToken *Token
+				for _, stmt := range stmts {
+					if stateDecl, ok := stmt.(*StateDecl); ok {
+						if stateDecl.name.lexeme == state {
+							stateToken = &stateDecl.name
+							break
+						}
+					}
+				}
+
+				return ParseError{
+					stateToken,
+					"State '" + state + "' has no outgoing transitions. " +
+						"DFA requires every non-final state to have transitions.",
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// Checks that final states don't have outgoing transitions
+func (p *Parser) validateFinalStates(stmts []Stmt) error {
+	// Collect all final states
+	finalStates := make(map[string]bool)
+	for _, stmt := range stmts {
+		if stateDecl, ok := stmt.(*StateDecl); ok {
+			if stateDecl.stateType.tokenType == FINAL {
+				finalStates[stateDecl.name.lexeme] = true
+			}
+		}
+	}
+
+	// Check if any final state has an outgoing transition
+	// that isn't itself
+	for _, stmt := range stmts {
+		if transDecl, ok := stmt.(*TransDecl); ok {
+			if finalStates[transDecl.fromState.lexeme] &&
+				transDecl.toState.lexeme != transDecl.fromState.lexeme {
+				return ParseError{
+					&transDecl.fromState,
+					"Final state '" + transDecl.fromState.lexeme + "' cannot have outgoing transitions.",
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// Checks that there is only one initial state
+func (p *Parser) validateUniqueInitialState(stmts []Stmt) error {
+	var initialState *StateDecl
+
+	for _, stmt := range stmts {
+		if stateDecl, ok := stmt.(*StateDecl); ok {
+			if stateDecl.stateType.tokenType == INITIAL {
+				if initialState != nil {
+					return ParseError{
+						&stateDecl.name,
+						"Duplicate initial state '" + stateDecl.name.lexeme + "'. " +
+							"Automaton already has initial state '" + initialState.name.lexeme + "'.",
+					}
+				}
+				initialState = stateDecl
+			}
+		}
+	}
+
+	return nil
 }
 
 func (p *Parser) automatonType() (*Token, error) {

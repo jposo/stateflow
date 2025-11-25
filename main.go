@@ -39,15 +39,15 @@ func main() {
 			os.Exit(65)
 		}
 		parser := stateflow.Parser{Tokens: tokens}
-		defs, parseErr := parser.Parse()
+		_, parseErr := parser.Parse()
 		if parseErr != nil {
 			fmt.Fprint(os.Stderr, parseErr.Error())
 			os.Exit(65) // Syntax Error
 		}
 		fmt.Println("No errors!")
-		for _, def := range defs {
-			fmt.Println(def)
-		}
+		// for _, def := range defs {
+		// 	fmt.Println(def)
+		// }
 		// printer := stateflow.AstPrinter{}
 
 	default:

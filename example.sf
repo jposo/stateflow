@@ -1,14 +1,11 @@
-// Comments
-
-dfa automataExample { // dfa or nfa
+dfa automataExample { // dfa
   initial q0;
   state q1;
   final q2;
 
-  on q0->q1 when "1";
-  on q1 -> q2 when "2";
+  on q0->q1 when "";
+  on q1->q2 when "2";
   on q2 -> q2 when "3" or /\d/;
-  on q2 -> q1 when "1";
 }
 
 fn main(input) {
