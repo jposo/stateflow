@@ -119,7 +119,7 @@ func (s *Scanner) scanToken() error {
 }
 
 func (s *Scanner) unexpectedError() error {
-	return fmt.Errorf("Unexpected character in line %d: %s\n", s.line, s.Source[s.start:s.current])
+	return fmt.Errorf("unexpected character in line %d: %s", s.line, s.Source[s.start:s.current])
 }
 
 // Returns the current byte in source and advances to next byte
@@ -171,7 +171,7 @@ func (s *Scanner) string() error {
 		s.advance()
 	}
 	if s.isAtEnd() {
-		return errors.New("Unterminated string.\n")
+		return errors.New("unterminated string")
 	}
 	s.advance() // Closing "
 
@@ -182,12 +182,12 @@ func (s *Scanner) string() error {
 func (s *Scanner) regex() error {
 	for s.peek() != '/' && !s.isAtEnd() {
 		if s.peek() == '\n' {
-			return errors.New("Unterminated RegEx.\n")
+			return errors.New("unterminated RegEx")
 		}
 		s.advance()
 	}
 	if s.isAtEnd() {
-		return errors.New("Unterminated RegEx.\n")
+		return errors.New("unterminated RegEx")
 	}
 	s.advance() // Closing /
 
@@ -199,8 +199,7 @@ func (s *Scanner) identifier() {
 	for isAlphanumeric(s.peek()) {
 		s.advance()
 	}
-	text := string(s.Source[s.start:s.current])
-	value, ok := keywords[text]
+	value, ok := keywords[string(s.Source[s.start:s.current])]
 	if !ok {
 		value = IDENTIFIER
 	}

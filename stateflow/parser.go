@@ -4,13 +4,74 @@ import (
 	"slices"
 )
 
+// Symbol represents an entry in the symbol table
+type Symbol struct {
+	Name     string
+	Type     SymbolType
+	Token    *Token
+	Metadata map[string]any // For storing additional info (params, states, etc.)
+}
+
+type SymbolType string
+
+const (
+	SymbolAutomaton SymbolType = "Automaton"
+	SymbolFunction  SymbolType = "Function"
+	SymbolState     SymbolType = "State"
+	SymbolParam     SymbolType = "Parameter"
+)
+
+// SymbolTable manages symbol declarations and scoping
+type SymbolTable struct {
+	scopes []map[string]*Symbol // Stack of scopes
+}
+
+func NewSymbolTable() *SymbolTable {
+	return &SymbolTable{
+		scopes: []map[string]*Symbol{make(map[string]*Symbol)}, // Global scope
+	}
+}
+
+func (st *SymbolTable) Define(name string, symbol *Symbol) error {
+	current := st.scopes[len(st.scopes)-1]
+	if _, exists := current[name]; exists {
+		return ParseError{symbol.Token, "Symbol '" + name + "' already defined in this scope."}
+	}
+	current[name] = symbol
+	return nil
+}
+
+func (st *SymbolTable) Lookup(name string) *Symbol {
+	// Search from innermost to outermost scope
+	for i := len(st.scopes) - 1; i >= 0; i-- {
+		if sym, exists := st.scopes[i][name]; exists {
+			return sym
+		}
+	}
+	return nil
+}
+
+func (st *SymbolTable) PushScope() {
+	st.scopes = append(st.scopes, make(map[string]*Symbol))
+}
+
+func (st *SymbolTable) PopScope() {
+	if len(st.scopes) > 1 {
+		st.scopes = st.scopes[:len(st.scopes)-1]
+	}
+}
+
 type Parser struct {
-	Tokens   []Token
-	current  int
-	hadError bool
+	Tokens      []Token
+	current     int
+	SymbolTable *SymbolTable
 }
 
 func (p *Parser) Parse() ([]Definition, error) {
+	if p.SymbolTable == nil {
+		p.SymbolTable = NewSymbolTable()
+	}
+
 	if !p.match(BOF) {
 		return nil, ParseError{p.peek(), "Expect BOF at start of program."}
 	}
@@ -91,6 +152,18 @@ func (p *Parser) automatonDef() (*AutomatonDef, error) {
 		return nil, err
 	}
 
+	// Register automaton in symbol table
+	if err := p.SymbolTable.Define(name.lexeme, &Symbol{
+		Name:  name.lexeme,
+		Type:  SymbolAutomaton,
+		Token: name,
+		Metadata: map[string]any{
+			"automatonType": automatonType.tokenType,
+		},
+	}); err != nil {
+		return nil, err
+	}
+
 	_, err = p.consume(LEFT_BRACE, "Expect '{' before automaton body.")
 	if err != nil {
 		return nil, err
@@ -120,6 +193,16 @@ func (p *Parser) automatonDef() (*AutomatonDef, error) {
 
 // validateAutomaton checks various constraints on the automaton
 func (p *Parser) validateAutomaton(stmts []Stmt, automatonType TokenType) error {
+	// Check that at least one state is declared
+	if err := p.validateNonEmptyAutomaton(stmts); err != nil {
+		return err
+	}
+
+	// Check for duplicate state names
+	if err := p.validateUniqueStates(stmts); err != nil {
+		return err
+	}
+
 	// Check for duplicate initial states
 	if err := p.validateUniqueInitialState(stmts); err != nil {
 		return err
@@ -127,6 +210,11 @@ func (p *Parser) validateAutomaton(stmts []Stmt, automatonType TokenType) error 
 
 	// Check that final states don't have outgoing transitions
 	if err := p.validateFinalStates(stmts); err != nil {
+		return err
+	}
+
+	// Check that all referenced states exist
+	if err := p.validateStateReferences(stmts); err != nil {
 		return err
 	}
 
@@ -280,6 +368,73 @@ func (p *Parser) validateUniqueInitialState(stmts []Stmt) error {
 	return nil
 }
 
+// Checks that automaton is not empty (has at least one state)
+func (p *Parser) validateNonEmptyAutomaton(stmts []Stmt) error {
+	hasState := false
+	for _, stmt := range stmts {
+		if _, ok := stmt.(*StateDecl); ok {
+			hasState = true
+			break
+		}
+	}
+	if !hasState {
+		return ParseError{
+			p.peek(),
+			"Automaton must declare at least one state.",
+		}
+	}
+	return nil
+}
+
+// Checks that all state names within an automaton are unique
+func (p *Parser) validateUniqueStates(stmts []Stmt) error {
+	states := make(map[string]*Token)
+	for _, stmt := range stmts {
+		if stateDecl, ok := stmt.(*StateDecl); ok {
+			if existing, found := states[stateDecl.name.lexeme]; found {
+				return ParseError{
+					&stateDecl.name,
+					"Duplicate state declaration '" + stateDecl.name.lexeme + "'. " +
+						"State was already declared at line " + string(rune(existing.line)),
+				}
+			}
+			states[stateDecl.name.lexeme] = &stateDecl.name
+		}
+	}
+	return nil
+}
+
+// Checks that all states referenced in transitions exist
+func (p *Parser) validateStateReferences(stmts []Stmt) error {
+	// First collect all declared states
+	declaredStates := make(map[string]bool)
+	for _, stmt := range stmts {
+		if stateDecl, ok := stmt.(*StateDecl); ok {
+			declaredStates[stateDecl.name.lexeme] = true
+		}
+	}
+
+	// Check all transitions reference valid states
+	for _, stmt := range stmts {
+		if transDecl, ok := stmt.(*TransDecl); ok {
+			if !declaredStates[transDecl.fromState.lexeme] {
+				return ParseError{
+					&transDecl.fromState,
+					"Transition references undefined state '" + transDecl.fromState.lexeme + "'.",
+				}
+			}
+			if !declaredStates[transDecl.toState.lexeme] {
+				return ParseError{
+					&transDecl.toState,
+					"Transition references undefined state '" + transDecl.toState.lexeme + "'.",
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (p *Parser) automatonType() (*Token, error) {
 	if p.match(DFA) {
 		return p.previous(), nil
@@ -425,6 +580,18 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		return nil, err
 	}
 
+	// Register function in global symbol table
+	if err := p.SymbolTable.Define(name.lexeme, &Symbol{
+		Name:  name.lexeme,
+		Type:  SymbolFunction,
+		Token: name,
+		Metadata: map[string]any{
+			"params": []string{},
+		},
+	}); err != nil {
+		return nil, err
+	}
+
 	_, err = p.consume(LEFT_PAREN, "Expect '(' after function name.")
 	if err != nil {
 		return nil, err
@@ -445,15 +612,43 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		return nil, err
 	}
 
+	// Create new scope for function body
+	p.SymbolTable.PushScope()
+
+	// Register parameters in function scope
+	paramNames := []string{}
+	for _, param := range params {
+		if err := p.SymbolTable.Define(param.lexeme, &Symbol{
+			Name:  param.lexeme,
+			Type:  SymbolParam,
+			Token: &param,
+		}); err != nil {
+			p.SymbolTable.PopScope()
+			return nil, err
+		}
+		paramNames = append(paramNames, param.lexeme)
+	}
+
+	// Update function metadata with parameter names
+	funcSym := p.SymbolTable.Lookup(name.lexeme)
+	if funcSym != nil {
+		funcSym.Metadata["params"] = paramNames
+	}
+
 	statements, err := p.statementList()
 	if err != nil {
+		p.SymbolTable.PopScope()
 		return nil, err
 	}
 
 	_, err = p.consume(RIGHT_BRACE, "Expect '}' after function body.")
 	if err != nil {
+		p.SymbolTable.PopScope()
 		return nil, err
 	}
+
+	// Pop function scope
+	p.SymbolTable.PopScope()
 
 	return &FunctionDef{
 		name:       *name,
@@ -531,6 +726,15 @@ func (p *Parser) statement() (Statement, error) {
 	source, err := p.consume(IDENTIFIER, "Expect identifier after '<-'.")
 	if err != nil {
 		return Assignment{}, err
+	}
+
+	// Validate that source identifier is a declared parameter or variable
+	if p.SymbolTable.Lookup(source.lexeme) == nil {
+		return Assignment{}, ParseError{
+			source,
+			"Undefined variable or parameter '" + source.lexeme + "'. " +
+				"Variable must be a function parameter.",
+		}
 	}
 
 	return Assignment{

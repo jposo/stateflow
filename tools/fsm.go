@@ -1,4 +1,4 @@
-package tools
+package main
 
 import "fmt"
 
@@ -41,7 +41,7 @@ type Fsm struct {
 func (f *Fsm) Trigger(event rune) error {
 	ok := f.CurrentState.IsValidTransition(event)
 	if !ok {
-		return fmt.Errorf("Invalid transition.")
+		return fmt.Errorf("invalid transition")
 	}
 	f.CurrentState = f.CurrentState.transitions[event]
 	return nil

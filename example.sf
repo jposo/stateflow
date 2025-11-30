@@ -3,9 +3,10 @@ dfa automataExample { // dfa
   state q1;
   final q2;
 
-  on q0->q1 when "";
+  on q0->q1 when "1";
+  //on q0 -> q2 when "1";
   on q1->q2 when "2";
-  on q2 -> q2 when "3" or /\d/;
+  //on q2 -> q2 when "3" or /\d/;
 }
 
 fn main(input) {

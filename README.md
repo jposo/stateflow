@@ -1,55 +1,55 @@
 # Stateflow
 
-## Salida esperada con archivo ejemplo `example.sf`
+Un parser y validador para máquinas de estado (DFAs y NFAs) con soporte para funciones.
+
+## ¿Qué es Stateflow?
+
+Stateflow es un lenguaje de dominio específico (DSL) para definir y validar máquinas de estado deterministas (DFA) y no-deterministas (NFA). Permite:
+
+- ✅ Definir autómatas DFA y NFA
+- ✅ Declarar estados (inicial, normal, final)
+- ✅ Definir transiciones con condiciones
+- ✅ Crear funciones reutilizables
+- ✅ Validar semánticamente el programa completo
+
+## Uso Rápido
+
+```bash
+# Tokenizar un archivo
+./stateflow tokenize example.sf
+
+# Parsear y validar
+./stateflow parse example.sf
+```
+
+## Características Principales
+
+1. **Scanner** - Análisis léxico con soporte para strings y regex
+2. **Parser** - Análisis sintáctico con validación semántica completa
+3. **Symbol Table** - Tabla de símbolos con scoping anidado
+4. **Validación Semántica** - 7 reglas de validación:
+   - Estados iniciales únicos
+   - Estados finales sin transiciones salientes
+   - Determinismo en DFAs
+   - Autómatas no vacíos
+   - Nombres de estados únicos
+   - Referencias de estados válidas
+   - Parámetros de función válidos
+
+## Ejemplo Simple
 
 ```
-(DFA "dfa" Line 3)
-(IDENTIFIER "automataExample" Line 3)
-(LEFT_BRACE "{" Line 3)
-(INITIAL "initial" Line 4)
-(IDENTIFIER "q0" Line 4)
-(DELIMITER "\n" Line 4)
-(STATE "state" Line 5)
-(IDENTIFIER "q1" Line 5)
-(DELIMITER "\n" Line 5)
-(FINAL "final" Line 6)
-(IDENTIFIER "q2" Line 6)
-(DELIMITER "\n" Line 6)
-(ON "on" Line 8)
-(IDENTIFIER "q0" Line 8)
-(ARROW_RIGHT "->" Line 8)
-(IDENTIFIER "q1" Line 8)
-(WHEN "when" Line 8)
-(STRING_LITERAL "\"1\"" Line 8)
-(IDENTIFIER "abc" Line 8)
-(DELIMITER "\n" Line 8)
-(ON "on" Line 9)
-(IDENTIFIER "q1" Line 9)
-(ARROW_RIGHT "->" Line 9)
-(IDENTIFIER "q2" Line 9)
-(WHEN "when" Line 9)
-(STRING_LITERAL "\"2\"" Line 9)
-(DELIMITER "\n" Line 9)
-(ON "on" Line 10)
-(IDENTIFIER "q2" Line 10)
-(ARROW_RIGHT "->" Line 10)
-(IDENTIFIER "q2" Line 10)
-(WHEN "when" Line 10)
-(STRING_LITERAL "\"3\"" Line 10)
-(OR "or" Line 10)
-(REGEX "/\\d/" Line 10)
-(RIGHT_BRACE "}" Line 11)
-(FUNCTION "fn" Line 13)
-(IDENTIFIER "main" Line 13)
-(LEFT_PAREN "(" Line 13)
-(IDENTIFIER "input" Line 13)
-(STRING "str" Line 13)
-(RIGHT_PAREN ")" Line 13)
-(LEFT_BRACE "{" Line 13)
-(IDENTIFIER "automataExample" Line 14)
-(ARROW_LEFT "<-" Line 14)
-(IDENTIFIER "input" Line 14)
-(DELIMITER "\n" Line 14)
-(RIGHT_BRACE "}" Line 15)
-(EOF "" Line 16)
+dfa contador {
+  initial q0;
+  state q1;
+  final q2;
+  
+  on q0 -> q1 when "inc";
+  on q1 -> q2 when "inc";
+  on q2 -> q2 when "reset";
+}
+
+fn main(input) {
+  contador <- input;
+}
 ```
