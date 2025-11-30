@@ -715,30 +715,30 @@ func (p *Parser) statementList() ([]Statement, error) {
 func (p *Parser) statement() (Statement, error) {
 	target, err := p.consume(IDENTIFIER, "Expect identifier.")
 	if err != nil {
-		return Assignment{}, err
+		return Call{}, err
 	}
 
 	_, err = p.consume(ARROW_LEFT, "Expect '<-' in assignment.")
 	if err != nil {
-		return Assignment{}, err
+		return Call{}, err
 	}
 
 	source, err := p.consume(IDENTIFIER, "Expect identifier after '<-'.")
 	if err != nil {
-		return Assignment{}, err
+		return Call{}, err
 	}
 
 	// Validate that source identifier is a declared parameter or variable
 	if p.SymbolTable.Lookup(source.lexeme) == nil {
-		return Assignment{}, ParseError{
+		return Call{}, ParseError{
 			source,
 			"Undefined variable or parameter '" + source.lexeme + "'. " +
 				"Variable must be a function parameter.",
 		}
 	}
 
-	return Assignment{
+	return Call{
 		target: *target,
-		source: *source,
+		input:  *source,
 	}, nil
 }

@@ -1,18 +1,18 @@
 # Stateflow
 
-Un parser y validador para máquinas de estado (DFAs y NFAs) con soporte para funciones.
+Un parser y validador para máquinas de estado (DFAs) con soporte para funciones.
 
 ## ¿Qué es Stateflow?
 
-Stateflow es un lenguaje de dominio específico (DSL) para definir y validar máquinas de estado deterministas (DFA) y no-deterministas (NFA). Permite:
+Stateflow es un lenguaje de dominio específico (DSL) para definir y validar máquinas de estado deterministas. Permite:
 
-- ✅ Definir autómatas DFA y NFA
+- ✅ Definir autómatas DFA (NFA en futuro)
 - ✅ Declarar estados (inicial, normal, final)
 - ✅ Definir transiciones con condiciones
 - ✅ Crear funciones reutilizables
 - ✅ Validar semánticamente el programa completo
 
-## Uso Rápido
+## Uso Rápido de Ejecutable
 
 ```bash
 # Tokenizar un archivo
@@ -20,6 +20,12 @@ Stateflow es un lenguaje de dominio específico (DSL) para definir y validar má
 
 # Parsear y validar
 ./stateflow parse example.sf
+```
+
+## Pruebas
+
+```base
+go test ./stateflow
 ```
 
 ## Características Principales

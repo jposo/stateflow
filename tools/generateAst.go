@@ -95,7 +95,7 @@ func main() {
 		defineAst(defPath, "Definition", defTypes)
 
 		statementTypes := []string{
-			"Assignment: target Token, source Token",
+			"Call: target Token, input Token",
 		}
 		statementPath := filepath.Join(outputDir, "statement.go")
 		defineAst(statementPath, "Statement", statementTypes)

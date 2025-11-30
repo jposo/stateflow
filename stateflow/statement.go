@@ -5,14 +5,14 @@ type Statement interface {
 }
 
 type StatementVisitor interface {
-	VisitAssignmentStatement(statement Assignment) (any, error)
+	VisitCallStatement(statement Call) (any, error)
 }
 
-type Assignment struct {
+type Call struct {
 	target Token
-	source Token
+	input  Token
 }
 
-func (a Assignment) Accept(visitor StatementVisitor) (any, error) {
-	return visitor.VisitAssignmentStatement(a)
+func (c Call) Accept(visitor StatementVisitor) (any, error) {
+	return visitor.VisitCallStatement(c)
 }

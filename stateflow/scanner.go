@@ -96,6 +96,8 @@ func (s *Scanner) scanToken() error {
 		}
 	case ';':
 		s.addToken(SEMICOLON)
+	case ',':
+		s.addToken(COMMA)
 	case '\n':
 		prev := s.lastToken()
 		if prev != nil {
