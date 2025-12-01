@@ -1,7 +1,6 @@
 package stateflow
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -121,7 +120,10 @@ func (s *Scanner) scanToken() error {
 }
 
 func (s *Scanner) unexpectedError() error {
-	return fmt.Errorf("unexpected character in line %d: %s", s.line, s.Source[s.start:s.current])
+	return SyntaxError{
+		Line:    s.line,
+		Message: fmt.Sprintf("unexpected character: %s", string(s.Source[s.start:s.current])),
+	}
 }
 
 // Returns the current byte in source and advances to next byte
@@ -173,7 +175,10 @@ func (s *Scanner) string() error {
 		s.advance()
 	}
 	if s.isAtEnd() {
-		return errors.New("unterminated string")
+		return SyntaxError{
+			Line:    s.line,
+			Message: "unterminated string",
+		}
 	}
 	s.advance() // Closing "
 
@@ -184,12 +189,18 @@ func (s *Scanner) string() error {
 func (s *Scanner) regex() error {
 	for s.peek() != '/' && !s.isAtEnd() {
 		if s.peek() == '\n' {
-			return errors.New("unterminated RegEx")
+			return SyntaxError{
+				Line:    s.line,
+				Message: "unterminated RegEx",
+			}
 		}
 		s.advance()
 	}
 	if s.isAtEnd() {
-		return errors.New("unterminated RegEx")
+		return SyntaxError{
+			Line:    s.line,
+			Message: "unterminated RegEx",
+		}
 	}
 	s.advance() // Closing /
 

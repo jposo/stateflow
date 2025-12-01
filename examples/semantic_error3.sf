@@ -1,0 +1,14 @@
+dfa automataExample { // dfa
+  initial q0;
+  state q1;
+  final q2;
+
+  on q0->q1 when "1";
+  on q2->q2 when "2";
+}
+
+fn main(input) {
+  automataExample <- input;
+}
+
+
