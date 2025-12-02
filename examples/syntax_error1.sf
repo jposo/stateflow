@@ -5,7 +5,6 @@ dfa automataExample { // dfa
 
   on q0->q1 when_should_be_here "1";
   on q1->q2 when "2";
-  ->
 }
 
 fn main(input) {

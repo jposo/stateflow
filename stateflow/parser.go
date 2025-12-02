@@ -152,7 +152,6 @@ func (p *Parser) automatonDef() (*AutomatonDef, error) {
 		return nil, err
 	}
 
-	// Register automaton in symbol table
 	if err := p.SymbolTable.Define(name.lexeme, &Symbol{
 		Name:  name.lexeme,
 		Type:  SymbolAutomaton,
@@ -179,7 +178,6 @@ func (p *Parser) automatonDef() (*AutomatonDef, error) {
 		return nil, err
 	}
 
-	// Validate that final states don't have outgoing transitions
 	if err := p.validateAutomaton(stmts, automatonType.tokenType); err != nil {
 		return nil, err
 	}
@@ -228,9 +226,9 @@ func (p *Parser) validateAutomaton(stmts []Stmt, automatonType TokenType) error 
 	return nil
 }
 
-// Checks DFA-specific transition constraints
+// Checks DFA specific transition constraints
 func (p *Parser) validateDFATransitions(stmts []Stmt) error {
-	// Collect all states (non-final states that need outgoing transitions)
+	// Collect all states
 	states := make(map[string]bool)
 	finalStates := make(map[string]bool)
 
@@ -243,19 +241,17 @@ func (p *Parser) validateDFATransitions(stmts []Stmt) error {
 		}
 	}
 
-	// Track transitions: map[fromState]map[symbol]toState
 	transitions := make(map[string]map[string]Token)
 
 	for _, stmt := range stmts {
 		if transDecl, ok := stmt.(*TransDecl); ok {
 			fromState := transDecl.fromState.lexeme
 
-			// Initialize map for this state if needed
 			if transitions[fromState] == nil {
 				transitions[fromState] = make(map[string]Token)
 			}
 
-			// Check each condition (symbol) in this transition
+			// Check each symbol in this transition
 			for _, condition := range transDecl.conditions {
 				var symbol string
 
@@ -282,7 +278,6 @@ func (p *Parser) validateDFATransitions(stmts []Stmt) error {
 					}
 				}
 
-				// Record this transition
 				transitions[fromState][symbol] = transDecl.toState
 			}
 		}
@@ -329,8 +324,7 @@ func (p *Parser) validateFinalStates(stmts []Stmt) error {
 		}
 	}
 
-	// Check if any final state has an outgoing transition
-	// that isn't itself
+	// Check if any final state has a transition that isnt to itself
 	for _, stmt := range stmts {
 		if transDecl, ok := stmt.(*TransDecl); ok {
 			if finalStates[transDecl.fromState.lexeme] &&
@@ -483,6 +477,15 @@ func (p *Parser) stateDecl() (*StateDecl, error) {
 		return nil, err
 	}
 
+	// Register state in symbol table
+	if err := p.SymbolTable.Define(name.lexeme, &Symbol{
+		Name:  name.lexeme,
+		Type:  SymbolState,
+		Token: name,
+	}); err != nil {
+		return nil, err
+	}
+
 	return &StateDecl{
 		stateType: *declType,
 		name:      *name,
@@ -580,7 +583,6 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		return nil, err
 	}
 
-	// Register function in global symbol table
 	if err := p.SymbolTable.Define(name.lexeme, &Symbol{
 		Name:  name.lexeme,
 		Type:  SymbolFunction,
@@ -612,10 +614,8 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		return nil, err
 	}
 
-	// Create new scope for function body
 	p.SymbolTable.PushScope()
 
-	// Register parameters in function scope
 	paramNames := []string{}
 	for _, param := range params {
 		if err := p.SymbolTable.Define(param.lexeme, &Symbol{
@@ -629,7 +629,6 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		paramNames = append(paramNames, param.lexeme)
 	}
 
-	// Update function metadata with parameter names
 	funcSym := p.SymbolTable.Lookup(name.lexeme)
 	if funcSym != nil {
 		funcSym.Metadata["params"] = paramNames
@@ -647,7 +646,6 @@ func (p *Parser) functionDef() (*FunctionDef, error) {
 		return nil, err
 	}
 
-	// Pop function scope
 	p.SymbolTable.PopScope()
 
 	return &FunctionDef{

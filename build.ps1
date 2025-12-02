@@ -19,3 +19,6 @@ $env:GOARCH = "arm64"
 go build -o bin/stateflow-macos-arm64 .
 
 Write-Host "Builds completed successfully!"
+
+Remove-Item Env:GOOS
+Remove-Item Env:GOARCH

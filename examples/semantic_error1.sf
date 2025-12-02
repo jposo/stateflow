@@ -5,10 +5,9 @@ dfa automataExample {
 
   on q0->q1 when "1";
   on q1->q2 when "2";
-  on q2->q0 when "3";
+  on q2->q0 when "3"; // error
 }
 
 fn main(input) {
   automataExample <- input;
 }
-

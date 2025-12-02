@@ -4,7 +4,8 @@ dfa automataExample { // dfa
   final q2;
 
   on q0->q1 when "1";
-  on q2->q2 when "2";
+  on q0->q2 when "1"
+  on q1->q2 when "2";
 }
 
 fn main(input) {
